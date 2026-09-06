@@ -8,11 +8,11 @@
 [![Code Style: Strict Typing](https://img.shields.io/badge/Typing-Strict%20Type%20Hints-informational.svg)](https://peps.python.org/pep-0484/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Un pipeline dinámico y asíncrono de extracción y procesamiento de datos web para entornos productivos. Implementado en Python con automatización de navegador mediante **Playwright**, validación de contratos de datos con **Pydantic v2**, y un motor ETL ligero con **Pandas** para deduplicación, ordenamiento y exportación multidestino (CSV / Excel).
+A dynamic, asynchronous web data extraction and processing pipeline engineered for production environments. Built with Python featuring browser automation via **Playwright**, data contract validation with **Pydantic v2**, and a lightweight ETL engine powered by **Pandas** for deduplication, sorting, and multi-format export (CSV / Excel).
 
 ---
 
-## 🏛 Arquitectura del Sistema
+## 🗄️ System Architecture
 
 ```mermaid
 flowchart TD
@@ -46,56 +46,56 @@ flowchart TD
 
 ---
 
-## 🌟 Características de Ingeniería
+## 🌟 Engineering Highlights
 
-- **Crawler Asíncrono con Playwright:** Control headless de Chromium con User-Agent verosímil, configuración de viewports y timeouts explícitos de 10s por operación.
-- **Paginación Inteligente:** Detección y navegación automática a través de los selectores de paginación del catálogo web hasta agotar las páginas disponibles o alcanzar el límite `max_pages`.
-- **Validación Estricta con Pydantic v2:**
-  - Limpieza automática de espacios en blanco en campos textuales y URLs.
-  - Conversión de precios con símbolos monetarios (`£51.77` ➔ `51.77`) asegurando invariantes numéricas (`price >= 0.0`).
-  - Mapeo de ratings semánticos (`One` a `Five` ➔ `1.0` a `5.0`).
-  - Parsing de disponibilidad de inventario a booleanos nativos.
-- **Deduplicación & Limpieza con Pandas:** Eliminación de duplicados basada en títulos normalizados y ordenamiento configurable de productos.
-- **Manejo Resiliente de Fallos:** Captura granular de excepciones por elemento; la ausencia o corrupción de un campo individual no interrumpe la recolección del resto del lote.
-- **Logging Estructurado:** Sustitución total de `print()` por el módulo estándar `logging` con niveles de severidad (`INFO`, `DEBUG`, `WARNING`, `ERROR`) y timestamps.
-- **Type Hinting Exhaustivo:** Tipado estático PEP 484 en todas las firmas de funciones y métodos.
+- **Asynchronous Crawler with Playwright:** Headless Chromium automation with realistic User-Agent headers, standard viewports, and explicit 10-second operation timeouts.
+- **Intelligent Pagination:** Automatically discovers and traverses pagination links (`li.next a`) until all catalog pages are exhausted or the `--max-pages` threshold is reached.
+- **Strict Data Contracts with Pydantic v2:**
+  - Automatic whitespace trimming across all textual fields and URLs.
+  - Robust currency parsing (e.g., `"£51.77"` ➔ `51.77`) with numeric validation enforcing `price >= 0.0`.
+  - Semantic star rating conversion (`"One"` through `"Five"` ➔ `1.0` through `5.0`).
+  - Parsing inventory availability strings into native boolean flags.
+- **Deduplication & Cleaning via Pandas:** Removes duplicate items by title while preserving the initial occurrence and provides configurable column-based sorting.
+- **Graceful Fault Tolerance:** Element-level exception boundaries ensure missing attributes or corrupted DOM nodes are logged without aborting batch execution.
+- **Structured Standard Logging:** Replaces all arbitrary `print()` statements with Python's standard `logging` module, including timestamps, log levels (`INFO`, `DEBUG`, `WARNING`, `ERROR`), and structured messages.
+- **Strict Type Hinting:** Full PEP 484 type annotations on all function and method signatures for superior maintainability and static analysis support.
 
 ---
 
-## 📁 Estructura del Proyecto
+## 📁 Project Structure
 
 ```text
 dynamic-web-harvester/
 ├── data/
-│   └── processed/            # Salida de archivos CSV y Excel (ignorado en git)
+│   └── processed/            # Export destination for CSV and Excel files (git-ignored)
 ├── src/
-│   ├── __init__.py           # Inicializador del paquete
-│   ├── models.py             # Esquemas y validadores Pydantic v2
-│   ├── pipeline.py           # Pipeline de limpieza, deduplicación y exportación
-│   └── scraper.py            # Scraper asíncrono con Playwright Chromium
+│   ├── __init__.py           # Package initializer
+│   ├── models.py             # Pydantic v2 schemas and validators
+│   ├── pipeline.py           # Cleaning, deduplication, and export pipeline
+│   └── scraper.py            # Asynchronous scraper using Playwright Chromium
 ├── tests/
 │   ├── __init__.py
-│   ├── test_models.py        # Pruebas unitarias de esquemas y validadores
-│   ├── test_pipeline.py      # Pruebas unitarias de transformaciones y exports
-│   └── test_scraper.py       # Pruebas unitarias del scraper sin llamadas de red
-├── .gitignore                # Reglas de exclusión para datos, logs y caches
-├── main.py                   # CLI con argparse y orquestador del pipeline
-├── README.md                 # Documentación técnica
-└── requirements.txt          # Dependencias de producción y pruebas
+│   ├── test_models.py        # Unit tests for schemas and data integrity
+│   ├── test_pipeline.py      # Unit tests for transformations and file exports
+│   └── test_scraper.py       # Unit tests for scraper logic without network calls
+├── .gitignore                # Exclusion rules for data, logs, and caches
+├── main.py                   # CLI entrypoint with argparse and pipeline orchestration
+├── README.md                 # Technical project documentation
+└── requirements.txt          # Production and testing dependencies
 ```
 
 ---
 
-## 🚀 Instalación y Puesta en Marcha
+## 🚀 Getting Started & Installation
 
-### 1. Clonar el repositorio y acceder
+### 1. Clone the Repository and Navigate to Root
 
 ```bash
-git clone https://github.com/usuario/dynamic-web-harvester.git
+git clone https://github.com/Christianlamas062/dynamic-web-harvester.git
 cd dynamic-web-harvester
 ```
 
-### 2. Configurar el Entorno Virtual
+### 2. Configure Virtual Environment
 
 ```bash
 # Windows
@@ -107,7 +107,7 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 3. Instalar Dependencias y Binarios de Navegador
+### 3. Install Dependencies and Browser Binaries
 
 ```bash
 pip install -r requirements.txt
@@ -116,9 +116,9 @@ playwright install chromium
 
 ---
 
-## 💻 Guía de Uso (CLI)
+## 💻 CLI Usage Guide
 
-El pipeline cuenta con una interfaz de línea de comandos construida con `argparse`:
+The harvester provides an intuitive command-line interface powered by `argparse`:
 
 ```text
 usage: dynamic-web-harvester [-h] [--max-pages MAX_PAGES] [--format {csv,excel}]
@@ -137,54 +137,54 @@ options:
                         Logging verbosity level (default: 'INFO')
 ```
 
-### Ejemplos de Ejecución
+### Execution Examples
 
-#### 1. Extracción rápida (1 página) y exportación a CSV:
+#### 1. Rapid Single-Page Extraction (CSV):
 ```bash
 python main.py --max-pages 1 --format csv
 ```
 
-#### 2. Extracción de 5 páginas con exportación a Excel:
+#### 2. Multi-Page Extraction (5 Pages to Excel):
 ```bash
 python main.py --max-pages 5 --format excel
 ```
 
-#### 3. Modo diagnóstico con logging detallado:
+#### 3. Diagnostic Mode with Verbose Logging:
 ```bash
 python main.py --max-pages 2 --format csv --log-level DEBUG
 ```
 
 ---
 
-## 🧪 Pruebas Automatizadas
+## 🧪 Automated Testing
 
-El proyecto incluye una suite exhaustiva de pruebas unitarias implementadas con `pytest` y `pytest-asyncio`. Las pruebas se ejecutan **100% desconectadas de la red** mediante fixtures y objetos simulados (mocks):
+The project includes an exhaustive unit testing suite implemented with `pytest` and `pytest-asyncio`. Tests execute **100% offline** using isolated fixtures and Playwright mock objects:
 
 ```bash
 pytest -v
 ```
 
-### Cobertura de Pruebas:
+### Test Coverage Overview:
 - **`tests/test_models.py`**:
-  - Instanciación correcta y limpieza de espacios en blanco.
-  - Conversión numérica de precios con símbolos de moneda.
-  - Validación de precio no negativo (`price >= 0.0`).
-  - Detección y rechazo de precios corruptos / no numéricos.
-  - Validación de título obligatorio y no vacío.
-  - Mapeo de ratings textuales (`One` a `Five`) y límites de rango (`0.0` a `5.0`).
-  - Parsing de estados de inventario a booleanos.
+  - Schema instantiation and automatic whitespace stripping.
+  - Currency extraction and string-to-float conversions.
+  - Price non-negativity constraint validation (`price >= 0.0`).
+  - Validation error handling for non-numeric and corrupted price values.
+  - Mandatory non-empty title enforcement.
+  - Textual star rating mapping (`"One"` through `"Five"`) and boundary checks (`0.0` to `5.0`).
+  - String inventory availability parsing to booleans.
 - **`tests/test_pipeline.py`**:
-  - Deduplicación por título conservando el registro inicial.
-  - Ordenamiento ascendente y descendente por precio.
-  - Manejo seguro de listas vacías.
-  - Exportación y verificación de integridad en CSV y Excel con `tmp_path`.
-  - Validación de formato de exportación no soportado.
+  - Duplicate record suppression by product title.
+  - Ascending and descending price ordering.
+  - Safe handling of empty datasets.
+  - Multi-format file export verification (CSV and Excel) via `tmp_path`.
+  - Rejection of unsupported export format strings.
 - **`tests/test_scraper.py`**:
-  - Extracción asíncrona de tarjetas de producto con locators de Playwright simulados.
-  - Tolerancia y degradación elegante ante elementos faltantes en el DOM.
+  - Asynchronous product card parsing using mocked Playwright locators.
+  - Resilient behavior and non-crashing fallback handling when encountering missing DOM elements.
 
 ---
 
-## 📄 Licencia
+## 📄 License
 
-Distribuido bajo la Licencia MIT. Consulta `LICENSE` para más información.
+Distributed under the MIT License. See `LICENSE` for details.
