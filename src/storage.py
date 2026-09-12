@@ -37,3 +37,45 @@ class S3DataSink:
         except ClientError as e:
             logger.error(f"Fallo al subir a S3: {e}")
             raise
+
+    def configure_lifecycle_policy(
+        self,
+        prefix: str = "raw/",
+        transition_days: int = 30,
+        expiration_days: int = 90,
+        storage_class: str = "GLACIER",
+    ) -> dict:
+        """Apply S3 Lifecycle policy to automatically archive and expire historical payloads."""
+        lifecycle_configuration = {
+            "Rules": [
+                {
+                    "ID": f"ArchiveAndExpireHistorical_{prefix.strip('/')}",
+                    "Status": "Enabled",
+                    "Filter": {"Prefix": prefix},
+                    "Transitions": [
+                        {
+                            "Days": transition_days,
+                            "StorageClass": storage_class,
+                        }
+                    ],
+                    "Expiration": {"Days": expiration_days},
+                }
+            ]
+        }
+        try:
+            response = self.s3_client.put_bucket_lifecycle_configuration(
+                Bucket=self.bucket_name,
+                LifecycleConfiguration=lifecycle_configuration,
+            )
+            logger.info(
+                "Lifecycle policy successfully applied to bucket '%s' (prefix='%s', transition=%dd to %s, expire=%dd)",
+                self.bucket_name,
+                prefix,
+                transition_days,
+                storage_class,
+                expiration_days,
+            )
+            return response
+        except ClientError as e:
+            logger.error(f"Failed to configure S3 lifecycle policy: {e}")
+            raise

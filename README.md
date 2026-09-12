@@ -1,5 +1,6 @@
 # Dynamic Web Harvester 🚀
 
+[![CI Pipeline](https://github.com/Christianlamas062/dynamic-web-harvester/actions/workflows/ci.yml/badge.svg)](https://github.com/Christianlamas062/dynamic-web-harvester/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Playwright](https://img.shields.io/badge/Playwright-Chromium%20Headless-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/python/)
 [![Pydantic v2](https://img.shields.io/badge/Pydantic-v2.x-E92063.svg?logo=pydantic&logoColor=white)](https://docs.pydantic.dev/)
@@ -62,6 +63,10 @@ Playwright Crawler ──> Pydantic Schema Validation ──┬──> Amazon S3
 - **Automated Date Partitioning:** Payloads are automatically partitioned using standard data lake hierarchy: `raw/YYYY/MM/DD/HHMMSS_records.json`, optimizing downstream querying with AWS Athena, Glue, or Spark.
 - **Fail-Safe Client Architecture:** Managed through `botocore.exceptions.ClientError` with comprehensive structured logging.
 - **Stateless Cloud Portability:** S3 credentials and bucket target configurations are completely decoupled via standard 12-Factor App environment variables.
+- **Automated Lifecycle Policy & FinOps Cost Optimization:** Ingestion bucket includes an automated lifecycle configuration:
+  - **Transition:** Objects with prefix `raw/` automatically transition to `GLACIER` (Glacier Flexible Retrieval) after **30 days**.
+  - **Expiration:** Historical payloads automatically expire and delete after **90 days** for cost-free data lifecycle management.
+  - Executable standalone via `python scripts/setup_s3_lifecycle.py` or programmatically via `S3DataSink.configure_lifecycle_policy()`.
 
 ### Required Environment Variables
 
@@ -90,6 +95,7 @@ docker compose up --build
 
 ## 🌟 Engineering Highlights
 
+- **CI/CD Quality Gate with GitHub Actions:** Automated continuous integration pipeline running full test suites and Playwright headless drivers on every push and PR to `main`.
 - **Asynchronous Crawler with Playwright:** Headless Chromium automation with realistic User-Agent headers, standard viewports, and explicit 10-second operation timeouts.
 - **Intelligent Pagination:** Automatically discovers and traverses pagination links (`li.next a`) until all catalog pages are exhausted or the `--max-pages` threshold is reached.
 - **Strict Data Contracts with Pydantic v2:**
@@ -110,9 +116,14 @@ docker compose up --build
 
 ```text
 dynamic-web-harvester/
+├── .github/
+│   └── workflows/
+│       └── ci.yml            # GitHub Actions automated CI testing pipeline
 ├── .env.example              # Environment variable template for cloud deployment
 ├── data/
 │   └── processed/            # Export destination for CSV and Excel files (git-ignored)
+├── scripts/
+│   └── setup_s3_lifecycle.py # Automated S3 lifecycle and glacier transition configuration
 ├── src/
 │   ├── __init__.py           # Package initializer
 │   ├── models.py             # Pydantic v2 schemas and validators
