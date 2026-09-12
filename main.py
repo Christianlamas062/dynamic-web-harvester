@@ -10,6 +10,7 @@ from pathlib import Path
 
 from src.pipeline import DataPipeline, ExportFormat
 from src.scraper import DynamicScraper
+from src.storage import S3DataSink
 
 logger = logging.getLogger("dynamic_web_harvester")
 
@@ -94,6 +95,11 @@ async def run_pipeline(
     scraper = DynamicScraper()
     async with scraper:
         products = await scraper.scrape(max_pages=max_pages)
+
+    # Persist raw records to S3 after Pydantic validation
+    records = [prod.model_dump() for prod in products]
+    s3_sink = S3DataSink()
+    s3_sink.upload_raw_payload(records)
 
     pipeline = DataPipeline(output_dir=output_dir)
     df = pipeline.process_products(products=products, sort_by="price", ascending=True)

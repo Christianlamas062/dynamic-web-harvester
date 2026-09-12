@@ -1,10 +1,10 @@
 services:
   harvester:
     build: .
-    volumes:
-      # Mapea los resultados procesados a una carpeta local de la máquina
-      - ./data/processed:/app/data/processed
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
-    # Para cambiar parámetros sin reconstruir la imagen:
-    command: ["--max-pages", "5", "--format", "excel", "--output-dir", "data/processed"]
+    volumes:
+      - ./data/processed:/app/data/processed
+    command: ["--max-pages", "1", "--format", "csv", "--output-dir", "data/processed"]

@@ -3,13 +3,15 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Playwright](https://img.shields.io/badge/Playwright-Chromium%20Headless-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/python/)
 [![Pydantic v2](https://img.shields.io/badge/Pydantic-v2.x-E92063.svg?logo=pydantic&logoColor=white)](https://docs.pydantic.dev/)
+[![AWS S3 Data Lake](https://img.shields.io/badge/AWS%20S3-Data%20Lake%20Sink-FF9900.svg?logo=amazons3&logoColor=white)](https://aws.amazon.com/s3/)
+[![Boto3](https://img.shields.io/badge/Boto3-AWS%20SDK-232F3E.svg?logo=amazonwebservices&logoColor=white)](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
 [![Pandas](https://img.shields.io/badge/Pandas-2.2+-150458.svg?logo=pandas&logoColor=white)](https://pandas.pydata.org/)
 [![Pytest](https://img.shields.io/badge/Tested%20with-Pytest-0A9EDC.svg?logo=pytest&logoColor=white)](https://pytest.org/)
 [![Code Style: Strict Typing](https://img.shields.io/badge/Typing-Strict%20Type%20Hints-informational.svg)](https://peps.python.org/pep-0484/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A dynamic, asynchronous web data extraction and processing pipeline engineered for production environments. Built with Python featuring browser automation via **Playwright**, data contract validation with **Pydantic v2**, and a lightweight ETL engine powered by **Pandas** for deduplication, sorting, and multi-format export (CSV / Excel). Fully containerized with **Docker** and **Docker Compose** for zero-configuration client delivery.
+A dynamic, asynchronous web data extraction and processing pipeline engineered for production environments. Built with Python featuring browser automation via **Playwright**, data contract validation with **Pydantic v2**, automated date-partitioned raw payload ingestion into **Amazon S3 (Data Lakehouse)** via **Boto3**, and a lightweight ETL engine powered by **Pandas** for deduplication, sorting, and multi-format export (CSV / Excel). Fully containerized with **Docker** and **Docker Compose** for zero-configuration client delivery.
 
 ---
 
@@ -32,17 +34,56 @@ flowchart TD
         E -->|Textual to Bool| I[Availability Validator]
     end
 
-    subgraph Transformation ["3. Data Pipeline & ETL (Pandas)"]
-        F & G & H & I --> J[DataFrame Ingestion]
-        J --> K[Deduplication by Title]
-        K --> L[Sorting by Criteria]
-    end
+    subgraph Persistence ["3. Dual Persistence Layer"]
+        F & G & H & I -->|Validated DTOs| S3Sink["Amazon S3 Lakehouse Sink (Boto3)"]
+        S3Sink --> S3Store[("s3://bucket/raw/YYYY/MM/DD/HHMMSS_records.json")]
 
-    subgraph Delivery ["4. Storage Layer (pathlib.Path)"]
-        L --> M{Format Switcher}
-        M -- CSV --> N[(data/processed/*.csv)]
-        M -- Excel --> O[(data/processed/*.xlsx)]
+        F & G & H & I -->|Ingestion| ETL["Data Pipeline & ETL (Pandas)"]
+        ETL --> Dedupe[Deduplication by Title]
+        Dedupe --> Sort[Sorting by Criteria]
+        Sort --> LocalStore{"Local Storage Switcher"}
+        LocalStore -- CSV --> CSVFile[("data/processed/*.csv")]
+        LocalStore -- Excel --> XLSXFile[("data/processed/*.xlsx")]
     end
+```
+
+---
+
+## ☁️ Cloud Architecture & Amazon S3 Lakehouse Sink
+
+Unlike basic scrapers that write volatile local text files, this pipeline implements an **Enterprise Data Lakehouse Architecture** for raw payload persistence:
+
+```text
+Playwright Crawler ──> Pydantic Schema Validation ──┬──> Amazon S3 Lakehouse Sink (Raw JSON)
+                                                    └──> Local ETL Pipeline (CSV / Excel)
+```
+
+### Key Cloud Capabilities
+- **Automated Date Partitioning:** Payloads are automatically partitioned using standard data lake hierarchy: `raw/YYYY/MM/DD/HHMMSS_records.json`, optimizing downstream querying with AWS Athena, Glue, or Spark.
+- **Fail-Safe Client Architecture:** Managed through `botocore.exceptions.ClientError` with comprehensive structured logging.
+- **Stateless Cloud Portability:** S3 credentials and bucket target configurations are completely decoupled via standard 12-Factor App environment variables.
+
+### Required Environment Variables
+
+Configure the following variables in a `.env` file at project root (see `.env.example`):
+
+| Variable | Description | Example / Default |
+| :--- | :--- | :--- |
+| `AWS_ACCESS_KEY_ID` | IAM User Access Key with S3 PutObject permission | `AKIA...` |
+| `AWS_SECRET_ACCESS_KEY` | IAM User Secret Access Key | `OA6c...` |
+| `AWS_DEFAULT_REGION` | AWS Region where the target S3 bucket resides | `us-east-1` |
+| `S3_BUCKET_NAME` | Destination S3 Bucket for the Data Lake | `harvester-data-christian-2026` |
+
+### One-Step Unified Deployment
+
+Deploy and execute the complete pipeline (including automated S3 upload) with a single command:
+
+```bash
+# Copy template and fill your credentials (once)
+cp .env.example .env
+
+# Single-command build & run
+docker compose up --build
 ```
 
 ---
@@ -56,8 +97,9 @@ flowchart TD
   - Robust currency parsing (e.g., `"£51.77"` ➔ `51.77`) with numeric validation enforcing `price >= 0.0`.
   - Semantic star rating conversion (`"One"` through `"Five"` ➔ `1.0` through `5.0`).
   - Parsing inventory availability strings into native boolean flags.
+- **Automated Cloud Lakehouse Persistence:** Asynchronous upload of validated JSON payloads to AWS S3 with timestamped directory partitioning (`raw/YYYY/MM/DD/...`).
 - **Deduplication & Cleaning via Pandas:** Removes duplicate items by title while preserving the initial occurrence and provides configurable column-based sorting.
-- **Containerized & Production Ready:** Includes pre-configured `Dockerfile` with official Playwright runtime and `docker-compose.yml` for single-command client execution with host volume mapping.
+- **Containerized & Production Ready:** Includes pre-configured `Dockerfile` with official Playwright runtime and `docker-compose.yml` with `.env` secret injection and host volume mapping.
 - **Graceful Fault Tolerance:** Element-level exception boundaries ensure missing attributes or corrupted DOM nodes are logged without aborting batch execution.
 - **Structured Standard Logging:** Replaces all arbitrary `print()` statements with Python's standard `logging` module, including timestamps, log levels (`INFO`, `DEBUG`, `WARNING`, `ERROR`), and structured messages.
 - **Strict Type Hinting:** Full PEP 484 type annotations on all function and method signatures for superior maintainability and static analysis support.
@@ -68,13 +110,15 @@ flowchart TD
 
 ```text
 dynamic-web-harvester/
+├── .env.example              # Environment variable template for cloud deployment
 ├── data/
 │   └── processed/            # Export destination for CSV and Excel files (git-ignored)
 ├── src/
 │   ├── __init__.py           # Package initializer
 │   ├── models.py             # Pydantic v2 schemas and validators
 │   ├── pipeline.py           # Cleaning, deduplication, and export pipeline
-│   └── scraper.py            # Asynchronous scraper using Playwright Chromium
+│   ├── scraper.py            # Asynchronous scraper using Playwright Chromium
+│   └── storage.py            # Amazon S3 Lakehouse Sink (Boto3 integration)
 ├── tests/
 │   ├── __init__.py
 │   ├── test_models.py        # Unit tests for schemas and data integrity
